@@ -88,7 +88,7 @@ def UniformSample_original_python(dataset):
 
         pos_target_len = 150
         # todo 随机采样到150
-        posindex = np.random.randint(0,len(posForUser)-1,pos_target_len)
+        posindex = np.random.randint(0,len(posForUser)-1, pos_target_len)
         positem_padding_rand = posForUser[posindex]
 
         while True:

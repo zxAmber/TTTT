@@ -2,7 +2,7 @@ import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Go CGCN")
-    parser.add_argument('--bpr_batch', type=int, default=2048,
+    parser.add_argument('--bpr_batch', type=int, default=4096,
                         help="the batch size for bpr loss training procedure")
     parser.add_argument('--recdim', type=int, default=64,
                         help="the embedding size of CGCN")

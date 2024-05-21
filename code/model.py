@@ -150,24 +150,30 @@ class CGCN(BasicModel):
         neg_emb = all_items[neg_items]
         users_emb_ego = self.embedding_user(users)  # batch_size*1*dim
         pos_emb_ego = self.embedding_item(pos_items)  # batch_size*n*dim
+        neg_emb_ego = self.embedding_item(neg_items)  # batch_size*1*dim
         # ----------------------------- todo add some CLUSTER algo -----------------------------
         # means(batchsize*n*dim) -> batchsize*1*dim
-        #
+        # pos_emb = torch.mean(pos_emb, dim=1, keepdim=False)
         # 神经网络聚类
-        pos_emb = torch.mean(pos_emb, dim=1, keepdim=False)
+        kmeansResult0 = self.getKmeans(pos_emb)
+        users_emb_exp = users_emb[:, None, :]
+        user_pos_dist = 1.0 / torch.sqrt(torch.sum((users_emb_exp - kmeansResult0) ** 2, dim=-1)) + 1e-8
+        # 权重归一化 --论文中要提出
+        pos_dist = user_pos_dist / torch.sum(user_pos_dist, dim=1, keepdim=True)
+        pos_emb = torch.sum(kmeansResult0 * pos_dist[:, :, None], dim=1)
+
         # pos_emb_ego = torch.mean(pos_emb_ego, dim=1, keepdim=False)
         ## ----------------------------- KMEAN 聚合模块 -----------------------------
         kmeansResult = self.getKmeans(pos_emb_ego)
-
-        # TODO 其他距离的方案
+        # Todo 其他距离的方案
         users_emb_ego_exp = users_emb_ego[:, None, :]
-        user_posi_dist = 1.0 / torch.sqrt(torch.sum((users_emb_ego_exp - kmeansResult) ** 2, dim=-1)) + 1e-8
+        user_pos_dist_ego = 1.0 / torch.sqrt(torch.sum((users_emb_ego_exp - kmeansResult) ** 2, dim=-1)) + 1e-8
         # 权重归一化 --论文中要提出
-        user_pos_weight = user_posi_dist / torch.sum(user_posi_dist, dim=1, keepdim=True)
-        pos_emb_ego = torch.sum(kmeansResult * user_pos_weight[:, :, None], dim=1)  # 对聚类中心加权求平均
+        pos_dist_ego = user_pos_dist_ego / torch.sum(user_pos_dist_ego, dim=1, keepdim=True)
+        pos_emb_ego = torch.sum(kmeansResult * pos_dist_ego[:, :, None], dim=1)  # 对聚类中心加权求平均
         #
         # ==============================================================
-        neg_emb_ego = self.embedding_item(neg_items)  # batch_size*1*dim
+
         # return users_emb, pos_emb, neg_emb, users_emb_ego, pos_emb_ego, neg_emb_ego
         return users_emb, pos_emb, neg_emb, users_emb_ego, pos_emb_ego, neg_emb_ego
 
