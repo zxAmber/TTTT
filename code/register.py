@@ -4,7 +4,6 @@ import model
 from pprint import pprint
 import os
 
-# currentPath = os.getcwd().replace('\\','/')
 current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.dirname(current_directory)
 
