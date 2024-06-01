@@ -2,9 +2,15 @@ import world
 import dataloader
 import model
 from pprint import pprint
+import os
+
+# currentPath = os.getcwd().replace('\\','/')
+current_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.dirname(current_directory)
 
 if world.dataset in ['gowalla', 'yelp2018', 'amazon-book']:
-    dataset = dataloader.Loader(path="../data/"+world.dataset)
+
+    dataset = dataloader.Loader(path=parent_directory+"/data/"+world.dataset)
 # elif world.dataset == 'lastfm':
 #     dataset = dataloader.LastFM()
 
