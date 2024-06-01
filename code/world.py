@@ -38,6 +38,9 @@ config['decay'] = args.decay
 config['pretrain'] = args.pretrain
 config['A_split'] = False
 config['bigdata'] = False
+config['rank'] = args.rank
+config['world_size']=args.world_size
+
 # todo -------- K-means Test ---------------
 config['num_clusters'] = args.num_clusters
 
@@ -62,6 +65,9 @@ PATH = args.path
 topks = eval(args.topks)
 tensorboard = args.tensorboard
 comment = args.comment
+
+rank = args.rank
+world_size = args.world_size
 
 from warnings import simplefilter
 simplefilter(action="ignore", category=FutureWarning)

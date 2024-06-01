@@ -1,1 +1,4 @@
 tensorboardX==2.6.2
+
+
+main.py: error: unrecognized arguments: --rank 0 --world-size 1 --ip 173.0.74.5 --port 2222
