@@ -22,6 +22,7 @@ bpr = utils.BPRLoss(Recmodel, world.config)
 weight_file = utils.getFileName()
 # weight_file = None
 print(f"load and save to {weight_file}")
+print(f"#########compute by {world.device}###########")
 if world.LOAD:
     try:
         Recmodel.load_state_dict(torch.load(weight_file,map_location=torch.device('cpu')))
@@ -42,9 +43,9 @@ else:
 try:
     for epoch in range(world.TRAIN_epochs):
         start = time.time()
-        if epoch %10 == 0:
-            cprint("[TEST]")
-            Procedure.Test(dataset, Recmodel, epoch, w, world.config['multicore'])
+        # if epoch %10 == 0:
+        #     cprint("[TEST]")
+        #     Procedure.Test(dataset, Recmodel, epoch, w, world.config['multicore'])
         output_information = Procedure.BPR_train_original(dataset, Recmodel, bpr, epoch, neg_k=Neg_k,w=w)
 
         print(f'EPOCH[{epoch+1}/{world.TRAIN_epochs}] {output_information}')

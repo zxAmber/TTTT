@@ -4,6 +4,8 @@ from dataloader import BasicDataset
 from torch import nn
 import numpy as np
 from sklearn.cluster import KMeans
+from time import time
+import scipy.sparse as sp
 
 
 class BasicModel(nn.Module):
@@ -61,7 +63,9 @@ class CGCN(BasicModel):
             self.embedding_item.weight.data.copy_(torch.from_numpy(self.config['item_emb']))
             print('use pretarined data')
         self.f = nn.Sigmoid()
-        self.Graph = self.dataset.getSparseGraph()
+        # H
+        self.all_emb = torch.cat([self.embedding_user.weight, self.embedding_item.weight])
+        self.Graph = self.dataset.getDistantMatrix(self.all_emb)
         print(f"cgcn is already to go(dropout:{self.config['dropout']})")
 
         # print("save_txt")
@@ -90,11 +94,11 @@ class CGCN(BasicModel):
         """
         propagate methods for lightGCN
         """
-        users_emb = self.embedding_user.weight
-        items_emb = self.embedding_item.weight
-        all_emb = torch.cat([users_emb, items_emb])
+        # users_emb = self.embedding_user.weight
+        # items_emb = self.embedding_item.weight
+        # all_emb = torch.cat([users_emb, items_emb])
         #   torch.split(all_emb , [self.num_users, self.num_items])
-        embs = [all_emb]
+        embs = [self.all_emb]
         if self.config['dropout']:
             if self.training:
                 print("droping")
@@ -108,14 +112,13 @@ class CGCN(BasicModel):
             if self.A_split:
                 temp_emb = []
                 for f in range(len(g_droped)):
-                    temp_emb.append(torch.sparse.mm(g_droped[f], all_emb))
+                    temp_emb.append(torch.sparse.mm(g_droped[f], self.all_emb))
                 side_emb = torch.cat(temp_emb, dim=0)
-                all_emb = side_emb
+                self.all_emb = side_emb
             else:
-                all_emb = torch.sparse.mm(g_droped, all_emb)
-            embs.append(all_emb)
+                self.all_emb = torch.sparse.mm(g_droped, self.all_emb)
+            embs.append(self.all_emb)
         embs = torch.stack(embs, dim=1)
-        # print(embs.size())
         light_out = torch.mean(embs, dim=1)
         users, items = torch.split(light_out, [self.num_users, self.num_items])
         return users, items
@@ -134,7 +137,7 @@ class CGCN(BasicModel):
         centroids_list = []
         for i in range(batch_size):
             x_np = x[i].cpu().detach().numpy()  # Shape: [150, 64]
-            kmeans = KMeans(n_clusters=self.config['num_clusters'] , random_state=0).fit(x_np)
+            kmeans = KMeans(n_clusters=self.config['num_clusters'], random_state=0).fit(x_np)
             centroids = kmeans.cluster_centers_
             centroids_tensor = torch.tensor(centroids, dtype=torch.float32).to(x.device)
             centroids_list.append(centroids_tensor)
@@ -190,16 +193,16 @@ class CGCN(BasicModel):
 
         return loss, reg_loss
 
-    def forward(self, users, items):
-        # compute embedding
-        all_users, all_items = self.computer()
-        # print('forward')
-        # all_users, all_items = self.computer()
-        users_emb = all_users[users]
-        items_emb = all_items[items]
-        inner_pro = torch.mul(users_emb, items_emb)
-        gamma = torch.sum(inner_pro, dim=1)
-        return gamma
+    # def forward(self, users, items):
+    #     # compute embedding
+    #     all_users, all_items = self.computer()
+    #     # print('forward')
+    #     # all_users, all_items = self.computer()
+    #     users_emb = all_users[users]
+    #     items_emb = all_items[items]
+    #     inner_pro = torch.mul(users_emb, items_emb)
+    #     gamma = torch.sum(inner_pro, dim=1)
+    #     return gamma
 
 
 # class PureMF(BasicModel):
