@@ -5,7 +5,7 @@ from pprint import pprint
 
 if world.dataset in ['gowalla', 'yelp2018', 'amazon-book']:
     # dataset = dataloader.Loader(path="../data/"+world.dataset)
-    dataset = dataloader.Loader(path="/mnt/data/yallo/")
+    dataset = dataloader.Loader(path="/mnt/data/yallo")
 
 # elif world.dataset == 'lastfm':
 #     dataset = dataloader.LastFM()
