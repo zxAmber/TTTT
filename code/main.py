@@ -42,6 +42,7 @@ if world.tensorboard:
     w: SummaryWriter = SummaryWriter(
         join(tensorboardPath + 'runs/', time.strftime("%m-%d-%Hh%Mm%Ss-") + "-" + world.comment)
     )
+else:
     w = None
     world.cprint("not enable tensorflowboard")
 
