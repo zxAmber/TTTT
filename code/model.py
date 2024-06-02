@@ -92,33 +92,34 @@ class CGCN(BasicModel):
         """
         users_emb = self.embedding_user.weight
         items_emb = self.embedding_item.weight
-        all_emb = torch.cat([users_emb, items_emb])
-        #   torch.split(all_emb , [self.num_users, self.num_items])
-        embs = [all_emb]
-        if self.config['dropout']:
-            if self.training:
-                print("droping")
-                g_droped = self.__dropout(self.keep_prob)
-            else:
-                g_droped = self.Graph
-        else:
-            g_droped = self.Graph
-
-        for layer in range(self.n_layers):
-            if self.A_split:
-                temp_emb = []
-                for f in range(len(g_droped)):
-                    temp_emb.append(torch.sparse.mm(g_droped[f], all_emb))
-                side_emb = torch.cat(temp_emb, dim=0)
-                all_emb = side_emb
-            else:
-                all_emb = torch.sparse.mm(g_droped, all_emb)
-            embs.append(all_emb)
-        embs = torch.stack(embs, dim=1)
-        # print(embs.size())
-        light_out = torch.mean(embs, dim=1)
-        users, items = torch.split(light_out, [self.num_users, self.num_items])
-        return users, items
+        # all_emb = torch.cat([users_emb, items_emb])
+        # #   torch.split(all_emb , [self.num_users, self.num_items])
+        # embs = [all_emb]
+        # if self.config['dropout']:
+        #     if self.training:
+        #         print("droping")
+        #         g_droped = self.__dropout(self.keep_prob)
+        #     else:
+        #         g_droped = self.Graph
+        # else:
+        #     g_droped = self.Graph
+        #
+        # for layer in range(self.n_layers):
+        #     if self.A_split:
+        #         temp_emb = []
+        #         for f in range(len(g_droped)):
+        #             temp_emb.append(torch.sparse.mm(g_droped[f], all_emb))
+        #         side_emb = torch.cat(temp_emb, dim=0)
+        #         all_emb = side_emb
+        #     else:
+        #         all_emb = torch.sparse.mm(g_droped, all_emb)
+        #     embs.append(all_emb)
+        # embs = torch.stack(embs, dim=1)
+        # # print(embs.size())
+        # light_out = torch.mean(embs, dim=1)
+        # users, items = torch.split(light_out, [self.num_users, self.num_items])
+        #return users, items
+        return users_emb,items_emb
 
     def getUsersRating(self, users):
         all_users, all_items = self.computer()
@@ -143,11 +144,12 @@ class CGCN(BasicModel):
         return centroids
 
     def getEmbedding(self, users, pos_items, neg_items):
-        all_users, all_items = self.computer()
+        #all_users, all_items = self.computer()
 
-        users_emb = all_users[users]
-        pos_emb = all_items[pos_items]
-        neg_emb = all_items[neg_items]
+        # users_emb = all_users[users]
+        # pos_emb = all_items[pos_items]
+        # neg_emb = all_items[neg_items]
+
         users_emb_ego = self.embedding_user(users)  # batch_size*1*dim
         pos_emb_ego = self.embedding_item(pos_items)  # batch_size*n*dim
         neg_emb_ego = self.embedding_item(neg_items)  # batch_size*1*dim
@@ -155,12 +157,12 @@ class CGCN(BasicModel):
         # means(batchsize*n*dim) -> batchsize*1*dim
         # pos_emb = torch.mean(pos_emb, dim=1, keepdim=False)
         # 神经网络聚类
-        kmeansResult0 = self.getKmeans(pos_emb)
-        users_emb_exp = users_emb[:, None, :]
-        user_pos_dist = 1.0 / torch.sqrt(torch.sum((users_emb_exp - kmeansResult0) ** 2, dim=-1)) + 1e-8
-        # 权重归一化 --论文中要提出
-        pos_dist = user_pos_dist / torch.sum(user_pos_dist, dim=1, keepdim=True)
-        pos_emb = torch.sum(kmeansResult0 * pos_dist[:, :, None], dim=1)
+        # kmeansResult0 = self.getKmeans(pos_emb)
+        # users_emb_exp = users_emb[:, None, :]
+        # user_pos_dist = 1.0 / torch.sqrt(torch.sum((users_emb_exp - kmeansResult0) ** 2, dim=-1)) + 1e-8
+        # # 权重归一化 --论文中要提出
+        # pos_dist = user_pos_dist / torch.sum(user_pos_dist, dim=1, keepdim=True)
+        # pos_emb = torch.sum(kmeansResult0 * pos_dist[:, :, None], dim=1)
 
         # pos_emb_ego = torch.mean(pos_emb_ego, dim=1, keepdim=False)
         ## ----------------------------- KMEAN 聚合模块 -----------------------------
@@ -175,15 +177,14 @@ class CGCN(BasicModel):
         # ==============================================================
 
         # return users_emb, pos_emb, neg_emb, users_emb_ego, pos_emb_ego, neg_emb_ego
-        return users_emb, pos_emb, neg_emb, users_emb_ego, pos_emb_ego, neg_emb_ego
+        return  users_emb_ego, pos_emb_ego, neg_emb_ego
 
     def bpr_loss(self, users, pos, neg):
-        (users_emb, pos_emb, neg_emb,
-         userEmb0, posEmb0, negEmb0) = self.getEmbedding(users.long(), pos.long(), neg.long())
+        (users_emb, pos_emb, neg_emb) = self.getEmbedding(users.long(), pos.long(), neg.long())
         # L2正则化项
-        reg_loss = (1 / 2) * (userEmb0.norm(2).pow(2) +
-                              posEmb0.norm(2).pow(2) +
-                              negEmb0.norm(2).pow(2)) / float(len(users))
+        # reg_loss = (1 / 2) * (userEmb0.norm(2).pow(2) +
+        #                       posEmb0.norm(2).pow(2) +
+        #                       negEmb0.norm(2).pow(2)) / float(len(users))
 
         # reg_loss = (1 / 2) * (userPosEmb0.norm(2).pow(2) + negEmb0.norm(2).pow(2)) / float(len(users))
 
@@ -194,7 +195,7 @@ class CGCN(BasicModel):
 
         loss = torch.mean(torch.nn.functional.softplus(neg_scores - pos_scores))
 
-        return loss, reg_loss
+        return loss
 
     def forward(self, users, items):
         # compute embedding
